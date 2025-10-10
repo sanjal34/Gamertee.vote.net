@@ -37,6 +37,24 @@ app.post('/register', (req, res) => {
   res.send('✅ Your vote has been registered. Thank you!');
 });
 
+// ✅ GET /admin/votes — secure route to view votes
+app.get('/admin/votes', (req, res) => {
+  const filePath = path.join(__dirname, 'private_votes.json');
+
+  // 🔐 Protect with secret code
+  if (req.query.secret !== 'musi') {
+    return res.status(403).send('Access denied');
+  }
+
+  if (fs.existsSync(filePath)) {
+    const raw = fs.readFileSync(filePath);
+    res.setHeader('Content-Type', 'application/json');
+    res.send(raw);
+  } else {
+    res.status(404).send('No votes found');
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running at http://localhost:${PORT}`);
