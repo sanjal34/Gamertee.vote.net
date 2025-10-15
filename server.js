@@ -6,6 +6,18 @@ const bodyParser = require('body-parser');
 const app = express();
 const PORT = 3000;
 
+// 🔧 Vote persistence setup
+const voteFile = path.join(__dirname, 'private_votes.json');
+
+function saveVote(vote) {
+  let votes = [];
+  if (fs.existsSync(voteFile)) {
+    votes = JSON.parse(fs.readFileSync(voteFile));
+  }
+  votes.push(vote);
+  fs.writeFileSync(voteFile, JSON.stringify(votes, null, 2));
+}
+
 // Middleware
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static('public')); // Serves your HTML
@@ -24,30 +36,20 @@ app.post('/register', (req, res) => {
     timestamp: new Date().toISOString()
   };
 
-  const filePath = path.join(__dirname, 'private_votes.json');
-  let votes = [];
-
-  if (fs.existsSync(filePath)) {
-    votes = JSON.parse(fs.readFileSync(filePath));
-  }
-
-  votes.push(vote);
-  fs.writeFileSync(filePath, JSON.stringify(votes, null, 2));
+  saveVote(vote); // ✅ Use the persistent save function
 
   res.send('✅ Your vote has been registered. Thank you!');
 });
 
 // ✅ GET /admin/votes — secure route to view votes
 app.get('/admin/votes', (req, res) => {
-  const filePath = path.join(__dirname, 'private_votes.json');
-
   // 🔐 Protect with secret code
   if (req.query.secret !== 'musi') {
     return res.status(403).send('Access denied');
   }
 
-  if (fs.existsSync(filePath)) {
-    const raw = fs.readFileSync(filePath);
+  if (fs.existsSync(voteFile)) {
+    const raw = fs.readFileSync(voteFile);
     res.setHeader('Content-Type', 'application/json');
     res.send(raw);
   } else {
